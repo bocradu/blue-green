@@ -8,14 +8,34 @@ events {
 }
 
 http {
-  upstream blue {
+  upstream blue_app {
     least_conn;
-    server blue:80 max_fails=3 fail_timeout=60 weight=1;
+    server blue_app:80 max_fails=3 fail_timeout=60 weight=1;
   }
 
-  upstream green {
+  upstream green_app {
     least_conn;
-    server green:80 max_fails=3 fail_timeout=60 weight=1;
+    server green_app:80 max_fails=3 fail_timeout=60 weight=1;
+  }
+  
+  upstream blue_api_app {
+    least_conn;
+	server blue_api_app:5003 max_fails=3 fail_timeout=60 weight=1;
+  }
+
+  upstream green_api_app {
+    least_conn;
+	server green_api_app:5003 max_fails=3 fail_timeout=60 weight=1;
+  }
+  
+  upstream blue_api_db {
+    least_conn;
+    server blue_api_db:5004 max_fails=3 fail_timeout=60 weight=1;
+  }
+
+  upstream green_api_db {
+    least_conn;
+    server green_api_db:5004 max_fails=3 fail_timeout=60 weight=1;
   }
 
   server {
@@ -23,9 +43,9 @@ http {
 
     location / {
       {{if eq $live "blue"}}
-      proxy_pass http://blue;
+      proxy_pass http://blue_app;
       {{else}}
-      proxy_pass http://green;
+      proxy_pass http://green_app;
       {{end}}
     }
   }
@@ -35,9 +55,57 @@ http {
 
     location / {
       {{if eq $live "blue"}}
-      proxy_pass http://green;
+      proxy_pass http://green_app;
       {{else}}
-      proxy_pass http://blue;
+      proxy_pass http://blue_app;
+      {{end}}
+    }
+  }
+  
+  server {
+    listen 5003 default;
+
+    location / {
+      {{if eq $live "blue"}}
+      proxy_pass http://blue_api_app:5003;
+      {{else}}
+      proxy_pass http://green_api_app:5003;
+      {{end}}
+    }
+  }
+
+  server {
+    listen 6003;
+
+    location / {
+      {{if eq $live "blue"}}
+      proxy_pass http://green_api_app:5003;
+      {{else}}
+      proxy_pass http://blue_api_app:5003;
+      {{end}}
+    }
+  }
+  
+  server {
+    listen 5004 default;
+
+    location / {
+      {{if eq $live "blue"}}
+      proxy_pass http://blue_api_db:5004;
+      {{else}}
+      proxy_pass http://green_api_db:5004;
+      {{end}}
+    }
+  }
+
+  server {
+    listen 6004;
+
+    location / {
+      {{if eq $live "blue"}}
+      proxy_pass http://green_api_db:5004;
+      {{else}}
+      proxy_pass http://blue_api_db:5004;
       {{end}}
     }
   }
